@@ -11,7 +11,7 @@
 #define TFT_RST 8
 
 // Hall Sensor Global Variables
-int periodRPM = 2000; //Change depending on speed
+int periodRPM = 4000; //Change depending on speed
 long elapsedTimeRPM  = 0;
 int revState = 0;
 int revolutions = 0;
