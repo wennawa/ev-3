@@ -1,14 +1,24 @@
 #include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
+//#include <LiquidCrystal.h>
 // #include "TFT_eSPI.h"
 
+// Screen Global Variables
 // For the Adafruit shield, these are the default.
 #define TFT_DC 9
 #define TFT_CS 10
 #define TFT_RST 8
 
-int rpm;
+// Hall Sensor Global Variables
+int periodRPM = 2000; //Change depending on speed
+long elapsedTimeRPM  = 0;
+int revState = 0;
+int revolutions = 0;
+int hallSensorPin = 4;
+int rpm = 0;
+
+int rpm2 = 0;
 
 // Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
@@ -23,27 +33,36 @@ void setup() {
   pinMode(7, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
   digitalWrite(7, HIGH);
-
   tft.begin();
   //tft.setRotation(1);
   tft.fillScreen(ILI9341_WHITE);
+
+  pinMode(hallSensorPin, INPUT);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly
-  unsigned long start = micros();
-  tft.setCursor(0, 0);
+  if ((millis() - elapsedTimeRPM) >= periodRPM) {
+    Serial.print("revolutions: ");
+    Serial.println(revolutions);
+    rpm = revsPM();
+    elapsedTimeRPM = millis();
+    Serial.print("RPM: ");
+    Serial.println(rpm);
+  }
+  rev();
 
+  //tft.fillScreen(ILI9341_WHITE);
+
+  unsigned long start = micros();
+  tft.setCursor(0, 40);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(5);
+  tft.println(rpm2);
+  tft.setCursor(0, 0);
   tft.setTextColor(ILI9341_BLACK);
   tft.setTextSize(5);
   tft.println("RPM: ");
-     //rpm = 30*1000/(millis() - timeold)*half_revolutions;
-     //timeold = millis();
-     //half_revolutions = 0;
-     
-     //Serial.println(rpm,DEC);
-     
-  tft.println(rpm)
+  tft.println(rpm);
   tft.println();
   tft.setTextColor(ILI9341_BLACK);
   tft.setTextSize(4);
@@ -56,55 +75,35 @@ void loop() {
   tft.println("Wind Velocity: ");
   // wind velocity based on wind tunnel testing goes here
     //tft.println(windVelocity)
+  rpm2 = rpm;
   tft.println();
   return micros() - start;
 }
 
-void HallSensor() {
-//   // digital pin 2 is the hall pin
-  int hall_pin = 2;
-  // set number of hall trips for RPM reading (higher improves accuracy)
-  float hall_thresh = 100.0;
+int revsPM() {
+  int revspermin = (revolutions * (60000)) / periodRPM;
+  revolutions = 0;
+  return revspermin;
+}
 
-  void setup() {
-    // initialize serial communication at 9600 bits per second:
-    Serial.begin(9600);
-    // make the hall pin an input:
-    pinMode(hall_pin, INPUT);
-  }
+void rev() {
+  switch(revState) {
+    case 0:
+      if (digitalRead(hallSensorPin)) {
+        revState = 0;
+      }
+      else {
+        revState = 1;
+        revolutions++;
+        Serial.println("increasing revolutions");
+      }
+    case 1:
+      if (digitalRead(hallSensorPin)) {
+        revState = 0;
+      }
+      else {
+        revState = 1;
+      }
 
-  // the loop routine runs over and over again forever:
-  void loop() {
-    // preallocate values for tach
-    float hall_count = 1.0;
-    float start = micros();
-    bool on_state = false;
-    // counting number of times the hall sensor is tripped
-    // but without double counting during the same trip
-    while(true){
-      if (digitalRead(hall_pin)==0){
-        if (on_state==false){
-          on_state = true;
-          hall_count+=1.0;
-        }
-      } else{
-        on_state = false;
-      }
-    
-      if (hall_count>=hall_thresh){
-        break;
-      }
-    }
-  
-    // print information about Time and RPM
-    float end_time = micros();
-    float time_passed = ((end_time-start)/1000000.0);
-    Serial.print("Time Passed: ");
-    Serial.print(time_passed);
-    Serial.println("s");
-    float rpm_val = (hall_count/time_passed)*60.0;
-    Serial.print(rpm_val);
-    Serial.println(" RPM");
-    delay(1);        // delay in between reads for stability
   }
- }
+}
