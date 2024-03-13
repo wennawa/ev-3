@@ -42,12 +42,12 @@ void setup() {
 
 void loop() {
   if ((millis() - elapsedTimeRPM) >= periodRPM) {
-    Serial.print("revolutions: ");
-    Serial.println(revolutions);
+    // Serial.print("revolutions: ");
+    // Serial.println(revolutions);
     rpm = revsPM();
     elapsedTimeRPM = millis();
-    Serial.print("RPM: ");
-    Serial.println(rpm);
+    // Serial.print("RPM: ");
+    // Serial.println(rpm);
   }
   rev();
 
